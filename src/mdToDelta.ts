@@ -3,6 +3,7 @@ import Delta from 'quill-delta';
 import unified from 'unified';
 import markdown from 'remark-parse';
 import { Parent } from 'unist';
+import remarkDisableTokenizers from 'remark-disable-tokenizers';
 
 export interface MarkdownToQuillOptions {
   debug?: boolean;
@@ -25,7 +26,10 @@ export class MarkdownToQuill {
   }
 
   convert(text: string): Op[] {
-    const processor = unified().use(markdown);
+    const processor = unified().use(markdown).use(remarkDisableTokenizers, {
+      block: ['blockquote', 'heading', 'table'],
+      inline: ['escape']
+  });
     const tree: Parent = processor.parse(text) as Parent;
 
     if (this.options.debug) {

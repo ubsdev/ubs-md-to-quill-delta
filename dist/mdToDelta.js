@@ -12,6 +12,7 @@ var __assign = (this && this.__assign) || function () {
 import Delta from 'quill-delta';
 import unified from 'unified';
 import markdown from 'remark-parse';
+import remarkDisableTokenizers from 'remark-disable-tokenizers';
 var defaultOptions = {
     debug: false
 };
@@ -21,7 +22,10 @@ var MarkdownToQuill = /** @class */ (function () {
         this.options = __assign(__assign({}, defaultOptions), options);
     }
     MarkdownToQuill.prototype.convert = function (text) {
-        var processor = unified().use(markdown);
+        var processor = unified().use(markdown).use(remarkDisableTokenizers, {
+            block: ['blockquote', 'heading', 'table'],
+            inline: ['escape']
+        });
         var tree = processor.parse(text);
         if (this.options.debug) {
             console.log('tree', tree);
