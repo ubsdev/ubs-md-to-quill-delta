@@ -6,23 +6,16 @@ import { Parent } from 'unist';
 
 export interface MarkdownToQuillOptions {
   debug?: boolean;
-  tableIdGenerator: () => string;
 }
 
 const defaultOptions: MarkdownToQuillOptions = {
-  debug: false,
-  tableIdGenerator: () => {
-    const id = Math.random()
-      .toString(36)
-      .slice(2, 6);
-    return `row-${id}`;
-  }
+  debug: false
 };
 
 export class MarkdownToQuill {
   options: MarkdownToQuillOptions;
 
-  blocks = ['paragraph', 'code', 'heading', 'blockquote', 'list', 'table'];
+  blocks = ['paragraph', 'code', 'list'];
 
   constructor(options?: Partial<MarkdownToQuillOptions>) {
     this.options = {
@@ -85,47 +78,6 @@ export class MarkdownToQuill {
           case 'listItem':
             delta = delta.concat(this.convertListItem(node, child, indent));
             break;
-          case 'table':
-            delta = delta.concat(
-              this.convertChildren(node, child, op, indent, {
-                align: (child as any).align
-              })
-            );
-            break;
-          case 'tableRow':
-            delta = delta.concat(
-              this.convertChildren(node, child, op, indent, {
-                ...extra,
-                id: this.generateId()
-              })
-            );
-            break;
-          case 'tableCell':
-            const align = extra && extra.align;
-            const alignCell =
-              align && Array.isArray(align) && align.length > idx && align[idx];
-            if (this.options.debug) {
-              console.log('align', alignCell, align, idx);
-            }
-            delta = delta.concat(
-              this.convertTableCell(node, child, extra && extra.id, alignCell)
-            );
-            break;
-          case 'heading':
-            delta = delta.concat(
-              this.convertChildren(node, child, op, indent + 1)
-            );
-            delta.push({
-              insert: '\n',
-              attributes: { header: child.depth || 1 }
-            });
-            break;
-          case 'blockquote':
-            delta = delta.concat(
-              this.convertChildren(node, child, op, indent + 1)
-            );
-            delta.push({ insert: '\n', attributes: { blockquote: true } });
-            break;
           case 'thematicBreak':
             delta.insert({ divider: true });
             delta.insert('\n');
@@ -150,10 +102,6 @@ export class MarkdownToQuill {
       });
     }
     return delta;
-  }
-
-  private generateId() {
-    return this.options.tableIdGenerator();
   }
 
   private isBlock(type: string) {
@@ -228,25 +176,6 @@ export class MarkdownToQuill {
     }
     if (this.options.debug) {
       console.log('list item', delta.ops);
-    }
-    return delta;
-  }
-
-  private convertTableCell(
-    parent: any,
-    node: any,
-    tableId: string,
-    align: string
-  ): Delta {
-    let delta = new Delta();
-    delta = delta.concat(this.convertChildren(parent, node, {}, 1));
-    const attributes: any = { table: tableId };
-    if (align && align !== 'left') {
-      attributes.align = align;
-    }
-    delta.insert('\n', attributes);
-    if (this.options.debug) {
-      console.log('table cell', delta.ops, align);
     }
     return delta;
   }
